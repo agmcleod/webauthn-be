@@ -1,0 +1,35 @@
+version: '3.7'
+services:
+  test_api:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      - test_db
+    stdin_open: true
+    environment:
+      - DATABASE_USERNAME
+      - DATABASE_HOST=test_db
+      - DATABASE_NAME=webauthn_test
+    volumes:
+      - .:/api
+      - /api/dist
+      - /api/node_modules
+    networks:
+      - test_webauthn_net
+
+  test_db:
+    # Uses default port 5432
+    image: postgres:12-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: webauthn_test
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - test_webauthn_net
+
+networks:
+  test_webauthn_net:
+    name: 'test_webauthn_net'

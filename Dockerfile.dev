@@ -1,0 +1,5 @@
+FROM node:16
+WORKDIR /api
+COPY . /api
+EXPOSE 8080
+CMD yarn && yarn start:dev
