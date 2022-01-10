@@ -11,6 +11,7 @@ services:
       - DATABASE_HOST
       - DATABASE_USERNAME
       - DATABASE_NAME
+      - SESSION_KEY
     ports:
       - 8080:8080
     volumes:
@@ -23,6 +24,7 @@ services:
     image: postgres:12-alpine
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: webauthn_dev
     ports:
       - 5432:5432
     restart: always
