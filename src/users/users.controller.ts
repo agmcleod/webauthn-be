@@ -19,11 +19,18 @@ export class UsersController {
     // https://w3c.github.io/webauthn/#sctn-cryptographic-challenges
     const challenge = base64url(crypto.randomBytes(32))
     session.challenge = challenge
-    console.log('setting challenge', challenge)
     return {
       challenge,
       id: base64url(crypto.randomBytes(32)),
     }
+  }
+
+  getBadRequestError(res: Response, message: string) {
+    return res.status(400).json({
+      message: [message],
+      statusCode: 400,
+      error: 'Bad Request',
+    })
   }
 
   @Post('register')
@@ -37,22 +44,17 @@ export class UsersController {
     )
 
     // writing these checks here instead of creating validation decorators, cause im lazy
+    if (clientData.type !== 'webauthn.create') {
+      return this.getBadRequestError(res, 'Incorrect client data type')
+    }
+
     if (clientData.challenge !== session.challenge) {
-      return res.status(400).json({
-        message: ['Challenge did not match'],
-        statusCode: 400,
-        error: 'Bad Request',
-      })
+      return this.getBadRequestError(res, 'Challenge did not match')
     }
 
     // check frontend origin
     if (clientData.origin !== 'http://localhost:3000') {
-      console.log(clientData.origin)
-      return res.status(400).json({
-        message: ['Origin did not match'],
-        statusCode: 400,
-        error: 'Bad Request',
-      })
+      return this.getBadRequestError(res, 'Origin did not match')
     }
 
     if (body.response.attestationObject) {
@@ -62,19 +64,12 @@ export class UsersController {
         // need to write to db here
         console.log(result.authrInfo)
       } else {
-        return res.status(400).json({
-          message: ['Cannot authenticate the signature'],
-          statusCode: 400,
-          error: 'Bad Request',
-        })
+        return this.getBadRequestError(res, 'Cannot authenticate the signature')
       }
     } else if (body.response.authenticatorData) {
+      throw new Error('not yet implemented')
     } else {
-      return res.status(400).json({
-        message: ['Cannot determine type of response'],
-        statusCode: 400,
-        error: 'Bad Request',
-      })
+      return this.getBadRequestError(res, 'Cannot determine type of response')
     }
 
     res.status(200).json({})
