@@ -7,7 +7,6 @@ import iso_3166_1 from 'iso-3166-1'
 
 import { ChallengeRequest } from './dtos/challenge-request.dto'
 import { parseCertInfo, parsePubArea } from './tpm'
-import { COSE_TO_FIDO_ALG } from './tpm.constants'
 
 const U2F_USER_PRESENTED = 0x01
 const U2F_USER_VERIFIED = 0b010
