@@ -7,10 +7,18 @@ import { User } from './dtos/user.dto'
 export class UsersService {
   constructor(private knexService: KnexService) {}
 
-  async registerUser(username: string): Promise<number[]> {
-    // will need to pass public key data here
+  async registerUser(
+    username: string,
+    publicKey: string,
+    counter: number,
+    credId: string,
+  ): Promise<number[]> {
+    // storing a single key here for an example, but should store multiple
     return this.knexService.knex('users').insert({
       username,
+      public_key: publicKey,
+      counter,
+      cred_id: credId,
     })
   }
 

@@ -1,35 +1,46 @@
-import { Controller, Get, Post, Body, Session, Res } from '@nestjs/common'
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Session,
+  Res,
+  Query,
+} from '@nestjs/common'
 import * as crypto from 'crypto'
-import base64url from 'base64url'
+import * as base64 from 'base64-arraybuffer'
 import { Response } from 'express'
 
 import { ChallengeResponse } from './dtos/challenge-response.dto'
 import { ChallengeRequest } from '../webauthn/dtos/challenge-request.dto'
 import { WebauthnService } from '../webauthn/webauthn.service'
+import { UsersService } from './users.service'
+import { getBadRequestError } from '../utils'
 
 @Controller('users')
 export class UsersController {
-  constructor(private webauthnService: WebauthnService) {}
+  constructor(
+    private webauthnService: WebauthnService,
+    private usersService: UsersService,
+  ) {}
 
   @Get('challenge')
   async getRegisterChallenge(
     @Session() session: Record<string, any>,
-  ): Promise<ChallengeResponse> {
-    // spec mentions to persist this for the operation, not sure how yet
-    // https://w3c.github.io/webauthn/#sctn-cryptographic-challenges
-    const challenge = base64url(crypto.randomBytes(32))
-    session.challenge = challenge
-    return {
-      challenge,
-      id: base64url(crypto.randomBytes(32)),
+    @Res() res: Response,
+    @Query('email') email?: string,
+  ): Promise<Response<ChallengeResponse>> {
+    if (email) {
+      const user = await this.usersService.findByUsername(email)
+      if (user) {
+        return getBadRequestError(res, 'User by this email already registered')
+      }
     }
-  }
-
-  getBadRequestError(res: Response, message: string) {
-    return res.status(400).json({
-      message: [message],
-      statusCode: 400,
-      error: 'Bad Request',
+    const challenge = base64.encode(crypto.randomBytes(32))
+    session.challenge = challenge
+    return res.status(200).json({
+      challenge,
+      id: base64.encode(crypto.randomBytes(32)),
     })
   }
 
@@ -39,37 +50,36 @@ export class UsersController {
     @Session() session: Record<string, any>,
     @Res() res: Response,
   ) {
-    const clientData = JSON.parse(
-      base64url.decode(body.response.clientDataJSON),
-    )
-
-    // writing these checks here instead of creating validation decorators, cause im lazy
-    if (clientData.type !== 'webauthn.create') {
-      return this.getBadRequestError(res, 'Incorrect client data type')
+    const user = await this.usersService.findByUsername(body.email)
+    if (user) {
+      return getBadRequestError(res, 'User by this email already registered')
     }
-
-    if (clientData.challenge !== session.challenge) {
-      return this.getBadRequestError(res, 'Challenge did not match')
-    }
-
-    // check frontend origin
-    if (clientData.origin !== 'http://localhost:3000') {
-      return this.getBadRequestError(res, 'Origin did not match')
-    }
-
-    if (body.response.attestationObject) {
-      const result =
-        this.webauthnService.verifyAuthenticatorAttestationResponse(body)
-      if (result.verified) {
-        // need to write to db here
-        console.log(result.authrInfo)
-      } else {
-        return this.getBadRequestError(res, 'Cannot authenticate the signature')
+    if (body.credential.response?.attestationObject) {
+      let result
+      try {
+        result =
+          await this.webauthnService.verifyAuthenticatorAttestationResponse(
+            body.credential,
+            session.challenge,
+          )
+      } catch (err) {
+        console.error(err)
+        return getBadRequestError(res, err.message)
       }
-    } else if (body.response.authenticatorData) {
-      throw new Error('not yet implemented')
+
+      if (result) {
+        const publicKey = result.authnrData.get('credentialPublicKeyPem')
+        const counter = result.authnrData.get('counter')
+        const credId = result.authnrData.get('credId')
+        await this.usersService.registerUser(
+          body.email,
+          publicKey,
+          counter,
+          credId,
+        )
+      }
     } else {
-      return this.getBadRequestError(res, 'Cannot determine type of response')
+      return getBadRequestError(res, 'Cannot determine type of response')
     }
 
     res.status(200).json({})

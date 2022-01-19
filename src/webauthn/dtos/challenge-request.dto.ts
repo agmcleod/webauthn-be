@@ -1,16 +1,10 @@
 import { IsNotEmpty } from 'class-validator'
 
+import { Credential } from './credential.dto'
+
 export class ChallengeRequest {
   @IsNotEmpty()
-  id: string
+  email: string
   @IsNotEmpty()
-  rawId: string
-  @IsNotEmpty()
-  response: {
-    authenticatorData: string
-    attestationObject: string
-    clientDataJSON: string
-  }
-  @IsNotEmpty()
-  type = 'public-key'
+  credential: Credential
 }
