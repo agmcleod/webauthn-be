@@ -3,6 +3,7 @@ exports.up = function (knex) {
     table.increments('id')
     table.string('username').notNullable()
     table.string('cred_id').notNullable()
+    table.string('public_key').notNullable()
     table.integer('counter').notNullable()
     table.timestamps(false, true)
   })

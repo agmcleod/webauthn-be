@@ -12,6 +12,7 @@ export class UsersService {
     publicKey: string,
     counter: number,
     credId: string,
+    credUserId: string,
   ): Promise<number[]> {
     // storing a single key here for an example, but should store multiple
     return this.knexService.knex('users').insert({
@@ -19,6 +20,7 @@ export class UsersService {
       public_key: publicKey,
       counter,
       cred_id: credId,
+      cred_user_id: credUserId,
     })
   }
 

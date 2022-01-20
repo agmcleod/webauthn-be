@@ -36,11 +36,14 @@ export class UsersController {
         return getBadRequestError(res, 'User by this email already registered')
       }
     }
-    const challenge = base64.encode(crypto.randomBytes(32))
+    const options = await this.webauthnService.getAttestationOptions()
+    const id = base64.encode(crypto.randomBytes(64))
+    const challenge = base64.encode(options.challenge)
     session.challenge = challenge
+    session.userId = id
     return res.status(200).json({
       challenge,
-      id: base64.encode(crypto.randomBytes(32)),
+      id,
     })
   }
 
@@ -68,14 +71,12 @@ export class UsersController {
       }
 
       if (result) {
-        const publicKey = result.authnrData.get('credentialPublicKeyPem')
-        const counter = result.authnrData.get('counter')
-        const credId = result.authnrData.get('credId')
         await this.usersService.registerUser(
           body.email,
-          publicKey,
-          counter,
-          credId,
+          result.publicKey,
+          result.counter,
+          result.credId,
+          session.userId,
         )
       }
     } else {
