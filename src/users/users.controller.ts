@@ -6,6 +6,7 @@ import {
   Session,
   Res,
   Query,
+  UseGuards,
 } from '@nestjs/common'
 import * as crypto from 'crypto'
 import * as base64 from 'base64-arraybuffer'
@@ -16,6 +17,7 @@ import { ChallengeRequest } from '../webauthn/dtos/challenge-request.dto'
 import { WebauthnService } from '../webauthn/webauthn.service'
 import { UsersService } from './users.service'
 import { getBadRequestError } from '../utils'
+import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 
 @Controller('users')
 export class UsersController {
@@ -84,5 +86,11 @@ export class UsersController {
     }
 
     res.status(200).json({})
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('protected')
+  async getProtected() {
+    return { accessed: true }
   }
 }

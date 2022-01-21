@@ -7,9 +7,11 @@ import { UsersService } from '../users/users.service'
 import { WebauthnService } from '../webauthn/webauthn.service'
 import { WebauthnStrategy } from './webauthn.strategy'
 import { AuthService } from './auth.service'
+import { JwtStrategy } from './jwt.strategy'
 
 @Module({
   imports: [
+    ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -19,7 +21,13 @@ import { AuthService } from './auth.service'
       inject: [ConfigService],
     }),
   ],
-  providers: [UsersService, WebauthnService, WebauthnStrategy, AuthService],
+  providers: [
+    UsersService,
+    WebauthnService,
+    WebauthnStrategy,
+    AuthService,
+    JwtStrategy,
+  ],
   controllers: [AuthController],
 })
 export class AuthModule {}
