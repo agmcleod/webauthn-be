@@ -12,6 +12,7 @@ services:
       - DATABASE_USERNAME
       - DATABASE_NAME
       - SESSION_KEY
+      - JWT_SIGN_KEY
     ports:
       - 8080:8080
     volumes:

@@ -11,6 +11,7 @@ services:
       - DATABASE_USERNAME
       - DATABASE_HOST=test_db
       - DATABASE_NAME=webauthn_test
+      - JWT_SIGN_KEY=27a0ec419792a871abdcbd22b8b2728976071d0295af21c2c270e319324005e9
     volumes:
       - .:/api
       - /api/dist

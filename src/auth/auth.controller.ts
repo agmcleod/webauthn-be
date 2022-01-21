@@ -4,21 +4,24 @@ import {
   Post,
   Res,
   Query,
-  Body,
   Session,
+  UseGuards,
+  Request,
 } from '@nestjs/common'
 import { Response } from 'express'
 
 import { WebauthnService } from '../webauthn/webauthn.service'
 import { UsersService } from '../users/users.service'
 import { getBadRequestError } from '../utils'
-import { AuthenticationRequest } from '../webauthn/dtos/authentication-request.dto'
+import { WebauthnGuard } from './webauthn.guard'
+import { AuthService } from './auth.service'
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private usersService: UsersService,
     private webauthnService: WebauthnService,
+    private authService: AuthService,
   ) {}
 
   // gets the configuration to start login process
@@ -45,22 +48,8 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(
-    @Res() res: Response,
-    @Body() body: AuthenticationRequest,
-    @Session() session: Record<string, any>,
-  ) {
-    const user = await this.usersService.findByUsername(body.email)
-    if (!user) {
-      return getBadRequestError(res, 'User not found')
-    }
-
-    const result = await this.webauthnService.verifyAssertionResult(
-      body.credential,
-      session.challenge,
-      user,
-    )
-
-    console.log(result)
+  @UseGuards(WebauthnGuard)
+  async login(@Request() req: any) {
+    return this.authService.login(req.user)
   }
 }
